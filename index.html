@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <title>Carnicería - Gestión de Productos</title>
+    <style>
+        body { background-color: #f4f4f4; }
+        .meat-box { background-color: #e9c914; border: 1px solid #35df26; padding: 10px; margin: 10px 0; cursor: pointer; }
+        .form-container { display: none; background-color: #fff; border: 1px solid #ccc; padding: 20px; margin-top: 20px; }
+        .form-section { margin-top: 30px; }
+    </style>
+</head>
+<body>
+<div class="container mt-5">
+    <h1 class="text-center">Carnicería - Gestión de Productos</h1>
+
+    <!-- Sección de listado -->
+    <div id="meatList"></div>
+    <div class="text-center mt-4">
+        <button class="btn btn-primary" id="showRegisterForm">Registrar Nuevo Producto</button>
+    </div>
+
+    <!-- Sección de formulario de registro -->
+    <div class="form-container form-section" id="registerFormContainer">
+        <h2>Registrar Nuevo Producto de Carne</h2>
+        <form id="meatForm">
+            <div class="form-group">
+                <label for="name">Nombre del Producto</label>
+                <input type="text" class="form-control" id="name" required>
+            </div>
+            <div class="form-group">
+                <label for="cut">Tipo de Corte</label>
+                <input type="text" class="form-control" id="cut" required>
+            </div>
+            <div class="form-group">
+                <label for="weight">Peso (kg)</label>
+                <input type="number" class="form-control" id="weight" required step="0.1">
+            </div>
+            <div class="form-group">
+                <label for="price">Precio (€ por kg)</label>
+                <input type="number" class="form-control" id="price" required step="0.01">
+            </div>
+            <div class="form-group">
+                <label for="stock">Cantidad en Stock</label>
+                <input type="number" class="form-control" id="stock" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Registrar</button>
+            <button type="button" class="btn btn-secondary" id="cancelRegisterForm">Cancelar</button>
+        </form>
+    </div>
+
+    <!-- Sección de formulario de edición -->
+    <div class="form-container form-section" id="editFormContainer">
+        <h2>Editar Producto de Carne</h2>
+        <form id="editMeatForm">
+            <input type="hidden" id="editIndex">
+            <div class="form-group">
+                <label for="editName">Nombre del Producto</label>
+                <input type="text" class="form-control" id="editName" required>
+            </div>
+            <div class="form-group">
+                <label for="editCut">Corte</label>
+                <input type="text" class="form-control" id="editCut" required>
+            </div>
+            <div class="form-group">
+                <label for="editWeight">Peso (kg)</label>
+                <input type="number" class="form-control" id="editWeight" required step="0.1">
+            </div>
+            <div class="form-group">
+                <label for="editPrice">Precio (€ por kg)</label>
+                <input type="number" class="form-control" id="editPrice" required step="0.01">
+            </div>
+            <div class="form-group">
+                <label for="editStock">Cantidad en Stock</label>
+                <input type="number" class="form-control" id="editStock" required>
+            </div>
+            <button type="submit" class="btn btn-success">Actualizar</button>
+            <button type="button" class="btn btn-danger" id="deleteMeatButton">Eliminar</button>
+            <button type="button" class="btn btn-secondary" id="cancelEditForm">Cancelar</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', loadMeats);
+
+    // Función para cargar los productos
+    function loadMeats() {
+        fetch('meat_manager.php?action=read')
+            .then(response => response.json())
+            .then(data => {
+                const meatList = document.getElementById('meatList');
+                meatList.innerHTML = '';
+                if (data.length === 0) {
+                    meatList.innerHTML = '<p>No hay productos registrados.</p>';
+                } else {
+                    data.forEach((meat, index) => {
+                        const div = document.createElement('div');
+                        div.classList.add('meat-box');
+                        div.innerText = `${index + 1}. ${meat.name} - Corte: ${meat.cut}, Peso: ${meat.weight}kg, Precio: ${meat.price}€/kg, Stock: ${meat.stock}`;
+                        div.onclick = () => editMeat(meat, index);
+                        meatList.appendChild(div);
+                    });
+                }
+            });
+    }
+
+    // Función para mostrar el formulario de registro
+    document.getElementById('showRegisterForm').onclick = function() {
+        document.getElementById('registerFormContainer').style.display = 'block';
+    };
+
+    // Función para cancelar el formulario de registro
+    document.getElementById('cancelRegisterForm').onclick = function() {
+        document.getElementById('registerFormContainer').style.display = 'none';
+    };
+
+    // Función para registrar un producto
+    document.getElementById('meatForm').onsubmit = function(event) {
+        event.preventDefault();
+        const data = {
+            name: document.getElementById('name').value,
+            cut: document.getElementById('cut').value,
+            weight: parseFloat(document.getElementById('weight').value),
+            price: parseFloat(document.getElementById('price').value),
+            stock: parseInt(document.getElementById('stock').value)
+        };
+
+        fetch('meat_manager.php?action=create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(() => {
+            loadMeats();
+            document.getElementById('registerFormContainer').style.display = 'none';
+        });
+    };
+
+    // Función para mostrar el formulario de edición
+    function editMeat(meat, index) {
+        document.getElementById('editIndex').value = index;
+        document.getElementById('editName').value = meat.name;
+        document.getElementById('editCut').value = meat.cut;
+        document.getElementById('editWeight').value = meat.weight;
+        document.getElementById('editPrice').value = meat.price;
+        document.getElementById('editStock').value = meat.stock;
+        document.getElementById('editFormContainer').style.display = 'block';
+    }
+
+    // Función para cancelar el formulario de edición
+    document.getElementById('cancelEditForm').onclick = function() {
+        document.getElementById('editFormContainer').style.display = 'none';
+    };
+
+    // Función para actualizar un producto
+    document.getElementById('editMeatForm').onsubmit = function(event) {
+        event.preventDefault();
+        const data = {
+            name: document.getElementById('editName').value,
+            cut: document.getElementById('editCut').value,
+            weight: parseFloat(document.getElementById('editWeight').value),
+            price: parseFloat(document.getElementById('editPrice').value),
+            stock: parseInt(document.getElementById('editStock').value)
+        };
+
+        const index = document.getElementById('editIndex').value;
+
+        fetch('meat_manager.php?action=update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ index, ...data })
+        })
+        .then(response => response.json())
+        .then(() => {
+            loadMeats();
+            document.getElementById('editFormContainer').style.display = 'none';
+        });
+    };
+
+    // Función para eliminar un producto
+    document.getElementById('deleteMeatButton').onclick = function() {
+        const index = document.getElementById('editIndex').value;
+
+        fetch('meat_manager.php?action=delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ index })
+        })
+        .then(response => response.json())
+        .then(() => {
+            loadMeats();
+            document.getElementById('editFormContainer').style.display = 'none';
+        });
+    };
+</script>
+</body>
+</html>
